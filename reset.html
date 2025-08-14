@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réinitialisation du mot de passe - ColyWay</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .lock-icon {
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #fdf2f2;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            color: #27ae60;
+            background: #f0f9f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .manual-link {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .manual-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        
+        .manual-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="lock-icon">🔐</div>
+        <h1>Réinitialisation du mot de passe</h1>
+        
+        <div id="loading-section">
+            <div class="message">
+                <div class="loading"></div>
+                <br><br>
+                Redirection vers l'application...
+            </div>
+        </div>
+        
+        <div id="error-section" style="display: none;">
+            <div class="error">
+                Impossible d'ouvrir automatiquement l'application.
+            </div>
+            <div class="manual-link">
+                <p>Cliquez sur ce lien pour continuer :</p>
+                <a href="#" id="manual-deep-link">Ouvrir dans ColyWay</a>
+            </div>
+        </div>
+        
+        <div id="success-section" style="display: none;">
+            <div class="success">
+                ✅ Redirection réussie ! L'application ColyWay va s'ouvrir.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fonction pour extraire les paramètres de l'URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                access_token: params.get('access_token'),
+                type: params.get('type'),
+                refresh_token: params.get('refresh_token')
+            };
+        }
+
+        // Fonction pour créer le deep link
+        function createDeepLink(params) {
+            const deepLinkUrl = new URL('colyway://reset-password');
+            
+            if (params.access_token) {
+                deepLinkUrl.searchParams.set('access_token', params.access_token);
+            }
+            if (params.type) {
+                deepLinkUrl.searchParams.set('type', params.type);
+            }
+            if (params.refresh_token) {
+                deepLinkUrl.searchParams.set('refresh_token', params.refresh_token);
+            }
+            
+            return deepLinkUrl.toString();
+        }
+
+        // Fonction principale
+        function handleRedirection() {
+            const params = getUrlParams();
+            
+            // Vérifier que nous avons les paramètres nécessaires
+            if (!params.access_token || params.type !== 'recovery') {
+                console.error('Paramètres manquants ou incorrects:', params);
+                showError();
+                return;
+            }
+
+            const deepLinkUrl = createDeepLink(params);
+            console.log('Tentative de redirection vers:', deepLinkUrl);
+
+            // Mettre à jour le lien manuel
+            document.getElementById('manual-deep-link').href = deepLinkUrl;
+
+            // Tentative de redirection automatique
+            setTimeout(() => {
+                try {
+                    // Essayer de rediriger vers l'application
+                    window.location.href = deepLinkUrl;
+                    
+                    // Afficher le succès après un court délai
+                    setTimeout(() => {
+                        showSuccess();
+                    }, 1000);
+                    
+                    // Si l'application ne s'ouvre pas, afficher l'option manuelle
+                    setTimeout(() => {
+                        if (document.visibilityState === 'visible') {
+                            showError();
+                        }
+                    }, 3000);
+                    
+                } catch (error) {
+                    console.error('Erreur lors de la redirection:', error);
+                    showError();
+                }
+            }, 1500);
+        }
+
+        function showError() {
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('success-section').style.display = 'none';
+            document.getElementById('error-section').style.display = 'block';
+            document.querySelector('.manual-link').style.display = 'block';
+        }
+
+        function showSuccess() {
+            document.getElementById('loading-section').style.display = 'none';
+            document.getElementById('error-section').style.display = 'none';
+            document.getElementById('success-section').style.display = 'block';
+        }
+
+        // Démarrer le processus au chargement de la page
+        document.addEventListener('DOMContentLoaded', handleRedirection);
+
+        // Gérer les changements de visibilité pour détecter si l'application s'est ouverte
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden') {
+                // L'utilisateur a probablement basculé vers l'application
+                setTimeout(() => {
+                    if (document.visibilityState === 'hidden') {
+                        showSuccess();
+                    }
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
