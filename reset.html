@@ -139,8 +139,8 @@
         function getUrlParams() {
             const params = new URLSearchParams(window.location.search);
             return {
-                access_token: params.get('token') || params.get('access_token'),
-                type: params.get('type'),
+                token: params.get('token'),
+                type: params.get('type') || 'recovery',
                 refresh_token: params.get('refresh_token')
             };
         }
@@ -149,8 +149,8 @@
         function createDeepLink(params) {
             const deepLinkUrl = new URL('colyway://reset-password');
             
-            if (params.access_token) {
-                deepLinkUrl.searchParams.set('access_token', params.access_token);
+            if (params.token) {
+                deepLinkUrl.searchParams.set('token', params.token);
             }
             if (params.type) {
                 deepLinkUrl.searchParams.set('type', params.type);
@@ -167,8 +167,8 @@
             const params = getUrlParams();
             
             // Vérifier que nous avons les paramètres nécessaires
-            if (!params.access_token || params.type !== 'recovery') {
-                console.error('Paramètres manquants ou incorrects:', params);
+            if (!params.token) {
+                console.error('Token manquant dans l\'URL:', params);
                 showError();
                 return;
             }
